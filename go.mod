@@ -1,4 +1,4 @@
-module db
+module github.com/xf005/db
 
 go 1.12
 
