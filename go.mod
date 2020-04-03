@@ -1,6 +1,12 @@
-module db
+module github.com/xf005/db
 
 go 1.12
+
+require (
+	github.com/jinzhu/gorm v1.9.10
+	github.com/xf005/goini v0.0.0-20180603013956-56a38bd2e09b
+	github.com/xf005/logger v1.0.0
+)
 
 replace (
 	cloud.google.com/go => github.com/googleapis/google-cloud-go v0.43.0
@@ -21,10 +27,4 @@ replace (
 	google.golang.org/appengine => github.com/golang/appengine v1.6.1
 	google.golang.org/genproto => github.com/google/go-genproto v0.0.0-20190716160619-c506a9f90610
 	google.golang.org/grpc => github.com/grpc/grpc-go v1.22.1
-)
-
-require (
-	github.com/jinzhu/gorm v1.9.10
-	github.com/xf005/goini v0.0.0-20180603013956-56a38bd2e09b
-	github.com/xf005/logger v1.0.0
 )
