@@ -31,6 +31,7 @@ func newDB(dbname string) (db *gorm.DB, err error) {
 	name := conf.GetValue(dbname, "name")
 	user := conf.GetValue(dbname, "user")
 	pass := conf.GetValue(dbname, "pass")
+	mode := conf.GetValue(dbname, "mode")
 	dns := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local", user, pass, host, port, name)
 	fmt.Println(dns)
 	db, err = gorm.Open("mysql", dns)
@@ -46,7 +47,7 @@ func newDB(dbname string) (db *gorm.DB, err error) {
 	db.DB().SetConnMaxLifetime(time.Hour * 7)
 	db.SingularTable(true)
 	//db.Set("gorm:table_options", "CHARSET=utf8").AutoMigrate(&User{})
-	db.LogMode(true)
+	db.LogMode(mode=="true")
 	return db, nil
 }
 
