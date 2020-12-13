@@ -2,14 +2,15 @@ package db
 
 import (
 	"fmt"
+	"github.com/xf005/db/conf"
+	"gorm.io/gorm/schema"
 	"os"
 	"sync"
 	"time"
 
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/mysql"
-	"github.com/xf005/goini"
-	"github.com/xf005/logger"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 const (
@@ -17,44 +18,43 @@ const (
 )
 
 /*
- * add mysql user
- * #grant all privileges on *.* to 'sysuser'@'localhost' identified by 'sysdba' with grant option;
- * #flush privileges;
+ * #add mysql user
+ * grant all privileges on *.* to 'sysuser'@'localhost' identified by 'sysdba' with grant option;
+ * flush privileges;
  *
  * @func init db connect
  */
 func newDB(dbname string) (db *gorm.DB, err error) {
-	//conf := goini.SetConfig("C:/server/goworkspace/workspace/src/user/conf/app.conf")
-	conf := goini.SetConfig("./conf/app.conf")
-	host := conf.GetValue(dbname, "host")
-	port := conf.GetValue(dbname, "port")
-	name := conf.GetValue(dbname, "name")
-	user := conf.GetValue(dbname, "user")
-	pass := conf.GetValue(dbname, "pass")
-	mode := conf.GetValue(dbname, "mode")
-	dns := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local", user, pass, host, port, name)
-	fmt.Println(dns)
-	db, err = gorm.Open("mysql", dns)
-	//db, err := gorm.Open("mysql", "sysuser:syspass@tcp(localhost:3306)/adshared?charset=utf8&parseTime=True&loc=Local")
+	app := conf.NewConf()
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", app.Db.User, app.Db.Pass, app.Db.Host, app.Db.Port, app.Db.Name)
+	gormConf := &gorm.Config{
+		SkipDefaultTransaction: true,
+		PrepareStmt:            true,
+		NamingStrategy: schema.NamingStrategy{
+			TablePrefix:   "t_",
+			SingularTable: true,
+		},
+	}
+	if app.Db.LogMode {
+		gormConf.Logger = logger.Default.LogMode(logger.Info)
+	}
+	fmt.Println(dsn)
+	db, err = gorm.Open(mysql.Open(dsn), gormConf)
 	if err != nil {
-		logger.Error("Database %s init error. %s", dbname, err.Error())
 		os.Exit(0)
 		return nil, err
 	}
-	logger.Info("Database %s init.", dbname)
-	db.DB().SetMaxIdleConns(50)
-	db.DB().SetMaxOpenConns(200)
-	db.DB().SetConnMaxLifetime(time.Hour * 7)
-	db.SingularTable(true)
-	//db.Set("gorm:table_options", "CHARSET=utf8").AutoMigrate(&User{})
-	db.LogMode(mode=="true")
-	return db, nil
+	sqlDB, err := db.DB()
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetMaxOpenConns(20)
+	sqlDB.SetConnMaxLifetime(time.Hour * 8)
+	return db, err
 }
 
 /*
  * @func set db
  */
-func NewDB(dbname string) (db *gorm.DB) {
+func New(dbname string) (db *gorm.DB) {
 	db, _ = dataBaseCache.get(dbname)
 	if db == nil {
 		newdb, _ := newDB(dbname)
@@ -68,7 +68,7 @@ func NewDB(dbname string) (db *gorm.DB) {
  * @func default db
  */
 func DB() (db *gorm.DB) {
-	return NewDB(DEFAULT)
+	return New(DEFAULT)
 }
 
 var (
