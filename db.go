@@ -2,8 +2,6 @@ package db
 
 import (
 	"fmt"
-	"github.com/xf005/db/conf"
-	"gorm.io/gorm/schema"
 	"os"
 	"sync"
 	"time"
@@ -11,10 +9,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-)
-
-const (
-	DEFAULT = "db"
+	"gorm.io/gorm/schema"
 )
 
 /*
@@ -22,11 +17,13 @@ const (
  * grant all privileges on *.* to 'sysuser'@'localhost' identified by 'sysdba' with grant option;
  * flush privileges;
  *
- * @func init db connect
+ * @func db connect
  */
-func newDB(dbname string) (db *gorm.DB, err error) {
-	app := conf.NewConf()
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", app.Db.User, app.Db.Pass, app.Db.Host, app.Db.Port, app.Db.Name)
+func connect(alias string) (db *gorm.DB, err error) {
+	e := DataSourceConf()
+	conf := e["datasource"].Alias[alias]
+	fmt.Println(alias, "init...")
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", conf.User, conf.Pass, conf.Host, conf.Port, conf.Db)
 	gormConf := &gorm.Config{
 		SkipDefaultTransaction: true,
 		PrepareStmt:            true,
@@ -35,7 +32,7 @@ func newDB(dbname string) (db *gorm.DB, err error) {
 			SingularTable: true,
 		},
 	}
-	if app.Db.LogMode {
+	if conf.LogMode {
 		gormConf.Logger = logger.Default.LogMode(logger.Info)
 	}
 	fmt.Println(dsn)
@@ -51,13 +48,17 @@ func newDB(dbname string) (db *gorm.DB, err error) {
 	return db, err
 }
 
+const (
+	DEFAULT = "db"
+)
+
 /*
  * @func set db
  */
 func New(dbname string) (db *gorm.DB) {
 	db, _ = dataBaseCache.get(dbname)
 	if db == nil {
-		newdb, _ := newDB(dbname)
+		newdb, _ := connect(dbname)
 		db = newdb
 		dataBaseCache.add(dbname, db)
 	}
