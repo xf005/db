@@ -14,7 +14,7 @@ func TestDb(t *testing.T) {
 	}
 	//
 	var confs []News
-	if err := DB().Model(&News{}).Find(&confs).Error; err == nil {
+	if err := DB().Model(&News{}).Limit(5).Find(&confs).Error; err == nil {
 		for _, conf := range confs {
 			fmt.Println(conf.Title)
 		}

@@ -20,31 +20,39 @@ import (
  * @func db connect
  */
 func connect(alias string) (db *gorm.DB, err error) {
-	e := DataSourceConf()
-	conf := e["datasource"].Alias[alias]
-	fmt.Println(alias, "init...")
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", conf.User, conf.Pass, conf.Host, conf.Port, conf.Db)
-	gormConf := &gorm.Config{
+	Configuration()
+	cfg := defaultDbConfig(conf.Database[alias])
+	dsn := fmt.Sprintf(
+		"%s?charset=utf8mb4&parseTime=True&loc=Local",
+		cfg.Dsn,
+	)
+	fmt.Println("db init, cfg:", cfg)
+
+	var ormLogger logger.Interface
+	if cfg.Debug {
+		ormLogger = logger.Default.LogMode(logger.Info)
+	} else {
+		ormLogger = logger.Default
+	}
+	ormCfg := &gorm.Config{
 		SkipDefaultTransaction: true,
 		PrepareStmt:            true,
+		Logger:                 ormLogger,
 		NamingStrategy: schema.NamingStrategy{
 			TablePrefix:   "t_",
 			SingularTable: true,
 		},
 	}
-	if conf.LogMode {
-		gormConf.Logger = logger.Default.LogMode(logger.Info)
-	}
-	fmt.Println(dsn)
-	db, err = gorm.Open(mysql.Open(dsn), gormConf)
+
+	db, err = gorm.Open(mysql.Open(dsn), ormCfg)
 	if err != nil {
 		os.Exit(0)
 		return nil, err
 	}
-	sqlDB, err := db.DB()
-	sqlDB.SetMaxIdleConns(10)
-	sqlDB.SetMaxOpenConns(20)
-	sqlDB.SetConnMaxLifetime(time.Hour * 8)
+	conn, err := db.DB()
+	conn.SetMaxIdleConns(cfg.MaxIdleConns)
+	conn.SetMaxOpenConns(cfg.MaxOpenConns)
+	conn.SetConnMaxLifetime(time.Hour * 8)
 	return db, err
 }
 
@@ -76,7 +84,7 @@ var (
 	dataBaseCache = &dbCache{cache: make(map[string]*gorm.DB)}
 )
 
-// database alias cacher.
+// database alias cache.
 type dbCache struct {
 	mux   sync.RWMutex
 	cache map[string]*gorm.DB

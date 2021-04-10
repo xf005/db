@@ -8,47 +8,45 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type DBConfiguration struct {
+	Database map[string]Database
+}
+
 type Database struct {
-	Alias map[string]Datasource
+	Dsn          string
+	MaxIdleConns int
+	MaxOpenConns int
+	Debug        bool
 }
 
-type Datasource struct {
-	Host    string `yaml:"host"`
-	Port    string `yaml:"port"`
-	Db      string `yaml:"db"`
-	User    string `yaml:"user"`
-	Pass    string `yaml:"pass"`
-	LogMode bool   `yaml:"logMode"`
-}
-
-func (e *Database) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	var alias map[string]Datasource
-	if err := unmarshal(&alias); err != nil {
-		// Here we expect an error because a boolean cannot be converted to a
-		// a MajorVersion
-		if _, ok := err.(*yaml.TypeError); !ok {
-			return err
-		}
+// 默认设置
+func defaultDbConfig(cfg Database) Database {
+	newCfg := cfg
+	if newCfg.MaxIdleConns == 0 {
+		newCfg.MaxIdleConns = 10
 	}
-	e.Alias = alias
-	return nil
+	if newCfg.MaxOpenConns == 0 {
+		newCfg.MaxOpenConns = 20
+	}
+	return newCfg
 }
 
 var (
-	once sync.Once
-	conf map[string]Database
+	syncOnce sync.Once
+	conf     *DBConfiguration
 )
 
-func DataSourceConf() map[string]Database {
-	once.Do(func() {
+func Configuration() {
+	syncOnce.Do(func() {
 		logger.Info("conf init...")
-		file, err := ioutil.ReadFile("./conf/app.yml")
+		file, err := ioutil.ReadFile("./conf/conf.yml")
 		if err != nil {
 			logger.Error(err.Error())
 		}
-		if err := yaml.Unmarshal(file, &conf); err != nil {
+		var config DBConfiguration
+		if err := yaml.Unmarshal(file, &config); err != nil {
 			logger.Error(err.Error())
 		}
+		conf = &config
 	})
-	return conf
 }
