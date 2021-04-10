@@ -22,10 +22,7 @@ import (
 func connect(alias string) (db *gorm.DB, err error) {
 	Configuration()
 	cfg := defaultDbConfig(conf.Database[alias])
-	dsn := fmt.Sprintf(
-		"%s?charset=utf8mb4&parseTime=True&loc=Local",
-		cfg.Dsn,
-	)
+	dsn := fmt.Sprintf("%s?charset=utf8mb4&parseTime=True&loc=Local", cfg.Dsn)
 	fmt.Println("db init, cfg:", cfg)
 
 	var ormLogger logger.Interface
