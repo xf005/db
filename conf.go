@@ -39,7 +39,7 @@ var (
 func Configuration() {
 	syncOnce.Do(func() {
 		logger.Info("conf init...")
-		file, err := ioutil.ReadFile("./conf/conf.yml")
+		file, err := ioutil.ReadFile("./conf.yml")
 		if err != nil {
 			logger.Error(err.Error())
 		}
