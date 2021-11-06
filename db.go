@@ -57,9 +57,7 @@ const (
 	DEFAULT = "db"
 )
 
-/*
- * @func set db
- */
+// New datasource
 func New(dbname string) (db *gorm.DB) {
 	db, _ = dataBaseCache.get(dbname)
 	if db == nil {
@@ -70,9 +68,7 @@ func New(dbname string) (db *gorm.DB) {
 	return db
 }
 
-/*
- * @func default db
- */
+// DB default
 func DB() (db *gorm.DB) {
 	return New(DEFAULT)
 }
