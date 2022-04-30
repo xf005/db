@@ -8,7 +8,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type DBConfiguration struct {
+type Datasource struct {
 	Database map[string]Database
 }
 
@@ -33,17 +33,17 @@ func defaultDbConfig(cfg Database) Database {
 
 var (
 	syncOnce sync.Once
-	conf     *DBConfiguration
+	conf     *Datasource
 )
 
 func Configuration() {
 	syncOnce.Do(func() {
-		logger.Info("conf init...")
+		logger.Info("db init...")
 		file, err := ioutil.ReadFile("./conf.yml")
 		if err != nil {
 			logger.Error(err.Error())
 		}
-		var config DBConfiguration
+		var config Datasource
 		if err := yaml.Unmarshal(file, &config); err != nil {
 			logger.Error(err.Error())
 		}
